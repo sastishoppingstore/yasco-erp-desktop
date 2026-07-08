@@ -63,10 +63,10 @@ jobs:
           }
 
           $installDirs = @(
-            (Join-Path $env:LOCALAPPDATA "Programs\ERP System"),
-            (Join-Path $env:LOCALAPPDATA "ERP System"),
-            (Join-Path $env:ProgramFiles "ERP System"),
-            (Join-Path ${env:ProgramFiles(x86)} "ERP System")
+            (Join-Path $env:LOCALAPPDATA "Programs\YASCO ERP"),
+            (Join-Path $env:LOCALAPPDATA "YASCO ERP"),
+            (Join-Path $env:ProgramFiles "YASCO ERP"),
+            (Join-Path ${env:ProgramFiles(x86)} "YASCO ERP")
           )
           $installDirs | ForEach-Object {
             if ($_ -and (Test-Path $_)) {
@@ -84,14 +84,14 @@ jobs:
           }
 
           $candidatePaths = @(
-            (Join-Path $env:LOCALAPPDATA "Programs\ERP System\ERP System.exe"),
-            (Join-Path $env:LOCALAPPDATA "Programs\ERP System\app.exe"),
-            (Join-Path $env:LOCALAPPDATA "ERP System\ERP System.exe"),
-            (Join-Path $env:LOCALAPPDATA "ERP System\app.exe"),
-            (Join-Path $env:ProgramFiles "ERP System\ERP System.exe"),
-            (Join-Path $env:ProgramFiles "ERP System\app.exe"),
-            (Join-Path ${env:ProgramFiles(x86)} "ERP System\ERP System.exe"),
-            (Join-Path ${env:ProgramFiles(x86)} "ERP System\app.exe")
+            (Join-Path $env:LOCALAPPDATA "Programs\YASCO ERP\YASCO ERP.exe"),
+            (Join-Path $env:LOCALAPPDATA "Programs\YASCO ERP\app.exe"),
+            (Join-Path $env:LOCALAPPDATA "YASCO ERP\YASCO ERP.exe"),
+            (Join-Path $env:LOCALAPPDATA "YASCO ERP\app.exe"),
+            (Join-Path $env:ProgramFiles "YASCO ERP\YASCO ERP.exe"),
+            (Join-Path $env:ProgramFiles "YASCO ERP\app.exe"),
+            (Join-Path ${env:ProgramFiles(x86)} "YASCO ERP\YASCO ERP.exe"),
+            (Join-Path ${env:ProgramFiles(x86)} "YASCO ERP\app.exe")
           )
 
           $exe = $candidatePaths |
@@ -100,7 +100,7 @@ jobs:
 
           if (-not $exe) {
             $candidatePaths | ForEach-Object { Write-Host "Checked: $_" }
-            throw "Installed ERP System executable was not found."
+            throw "Installed YASCO ERP executable was not found."
           }
           Write-Host "Using installed executable: $exe"
 
@@ -109,7 +109,7 @@ jobs:
 
           $running = Get-Process -Id $process.Id -ErrorAction SilentlyContinue
           if (-not $running) {
-            throw "ERP System.exe exited immediately after launch."
+            throw "YASCO ERP.exe exited immediately after launch."
           }
 
           $backendLog = Join-Path $env:TEMP "erp-system-backend.log"

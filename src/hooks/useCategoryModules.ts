@@ -1,9 +1,10 @@
 import { useMemo } from "react";
-
-export type BusinessCategory =
-  | "hospital" | "workshop" | "construction" | "retail" | "restaurant"
-  | "hotel" | "manufacturing" | "education" | "transport" | "real_estate"
-  | "services" | "all";
+import {
+  BusinessCategory,
+  getStoredCategory,
+  getEnabledModuleIds,
+  MODULE_PATH_PREFIXES,
+} from "@/config/businessCatalog";
 
 export interface ModuleConfig {
   key: string;
@@ -11,19 +12,6 @@ export interface ModuleConfig {
   labelAr: string;
   path: string;
   icon: string;
-}
-
-const CATEGORY_STORAGE_KEY = "yasco-company-profile";
-
-function getStoredCategory(): BusinessCategory {
-  try {
-    const raw = localStorage.getItem(CATEGORY_STORAGE_KEY);
-    if (!raw) return "all";
-    const data = JSON.parse(raw);
-    return (data.businessCategory as BusinessCategory) || "all";
-  } catch {
-    return "all";
-  }
 }
 
 const coreModules: ModuleConfig[] = [
@@ -99,6 +87,14 @@ const verticalModules: Record<BusinessCategory, ModuleConfig[]> = {
     { key: "hotel-restaurant", label: "Restaurant", labelAr: "المطعم", path: "/app/pos/restaurant", icon: "UtensilsCrossed" },
     { key: "hotel-events", label: "Events", labelAr: "الفعاليات", path: "/app/verticals/hotel/events", icon: "PartyPopper" },
   ],
+  hostel: [
+    { key: "hotel", label: "Rooms", labelAr: "الغرف", path: "/app/verticals/hotel", icon: "Hotel" },
+    { key: "hotel-rooms", label: "Room Registry", labelAr: "سجل الغرف", path: "/app/verticals/hotel/rooms", icon: "BedDouble" },
+    { key: "hotel-bookings", label: "Bookings", labelAr: "الحجوزات", path: "/app/verticals/hotel/bookings", icon: "Calendar" },
+    { key: "realestate-rent", label: "Rent Invoicing", labelAr: "فوترة الإيجار", path: "/app/verticals/real-estate/rent-invoicing", icon: "Receipt" },
+    { key: "realestate-maintenance", label: "Maintenance", labelAr: "الصيانة", path: "/app/verticals/real-estate/maintenance", icon: "Wrench" },
+    { key: "hotel-housekeeping", label: "Housekeeping", labelAr: "التدبير المنزلي", path: "/app/verticals/hotel/housekeeping", icon: "SprayCan" },
+  ],
   manufacturing: [
     { key: "manufacturing", label: "Manufacturing", labelAr: "التصنيع", path: "/app/manufacturing", icon: "Factory" },
     { key: "manufacturing-bom", label: "BOM", labelAr: "قائمة المواد", path: "/app/manufacturing/bom", icon: "List" },
@@ -140,6 +136,29 @@ const verticalModules: Record<BusinessCategory, ModuleConfig[]> = {
     { key: "services-tasks", label: "Tasks", labelAr: "المهام", path: "/app/projects/tasks", icon: "CheckSquare" },
     { key: "services-contracts", label: "Service Contracts", labelAr: "عقود الخدمة", path: "/app/verticals/services/contracts", icon: "FileSignature" },
   ],
+  laundry: [
+    { key: "pos", label: "Laundry POS", labelAr: "نقطة بيع المغسلة", path: "/app/pos", icon: "Store" },
+    { key: "crm", label: "Customers", labelAr: "العملاء", path: "/app/crm", icon: "Briefcase" },
+    { key: "retail-products", label: "Items & Services", labelAr: "الأصناف والخدمات", path: "/app/inventory/products", icon: "Package" },
+  ],
+  salon: [
+    { key: "crm", label: "Customers", labelAr: "العملاء", path: "/app/crm", icon: "Briefcase" },
+    { key: "pos", label: "Salon POS", labelAr: "نقطة بيع الصالون", path: "/app/pos", icon: "Store" },
+    { key: "services-tasks", label: "Appointments", labelAr: "المواعيد", path: "/app/projects/tasks", icon: "Calendar" },
+  ],
+  gym: [
+    { key: "crm", label: "Members", labelAr: "الأعضاء", path: "/app/crm", icon: "Briefcase" },
+    { key: "sales", label: "Membership Billing", labelAr: "فوترة الاشتراكات", path: "/app/sales", icon: "Receipt" },
+  ],
+  pharmacy: [
+    { key: "healthcare-pharmacy", label: "Pharmacy POS", labelAr: "نقطة بيع الصيدلية", path: "/app/pos/pharmacy", icon: "Pill" },
+    { key: "retail-products", label: "Medicines", labelAr: "الأدوية", path: "/app/inventory/products", icon: "Package" },
+  ],
+  ecommerce: [
+    { key: "retail-products", label: "Products", labelAr: "المنتجات", path: "/app/inventory/products", icon: "Package" },
+    { key: "sales", label: "Online Orders", labelAr: "طلبات المتجر", path: "/app/sales/orders", icon: "ShoppingCart" },
+    { key: "transport-shipments", label: "Shipments", labelAr: "الشحنات", path: "/app/verticals/transport/shipments", icon: "Package" },
+  ],
   all: [],
 };
 
@@ -149,8 +168,15 @@ export function useCategoryModules(category?: BusinessCategory) {
     const verticals = cat === "all"
       ? Object.values(verticalModules).flat()
       : verticalModules[cat] || [];
-    return [...coreModules, ...verticals];
+    const enabledModuleIds = new Set(getEnabledModuleIds(cat));
+    const modules = [...coreModules, ...verticals];
+    if (cat === "all") return modules;
+    return modules.filter((module) => {
+      if (enabledModuleIds.has(module.key)) return true;
+      const paths = MODULE_PATH_PREFIXES[module.key] || [];
+      return paths.some((prefix) => module.path === prefix || module.path.startsWith(`${prefix}/`));
+    });
   }, [category]);
 }
 
-export { getStoredCategory };
+export { getStoredCategory, type BusinessCategory };
