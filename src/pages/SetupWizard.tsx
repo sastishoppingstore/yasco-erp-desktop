@@ -20,6 +20,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  BUSINESS_CATALOG,
+  MODULE_CHOICES,
+  getDefaultModulesForCategory,
+  saveBusinessSelection,
+} from "@/config/businessCatalog";
+import type { BusinessCategory } from "@/config/businessCatalog";
 
 const steps = [
   { key: "company", icon: Building2, titleEn: "Company Information", titleAr: "معلومات الشركة" },
@@ -90,7 +98,8 @@ export default function SetupWizard() {
   const [receiptNextNumber, setReceiptNextNumber] = useState("3001");
 
   // Step 7: Business Type
-  const [businessType, setBusinessType] = useState("construction");
+  const [businessType, setBusinessType] = useState<BusinessCategory>("construction");
+  const [selectedModules, setSelectedModules] = useState<string[]>(getDefaultModulesForCategory("construction"));
 
   // Step 8: License
   const [licenseKey, setLicenseKey] = useState("");
@@ -212,7 +221,10 @@ export default function SetupWizard() {
         case "business":
           await saveProfileMut.mutateAsync({
             businessType,
+            selectedModules,
+            enabledModules: selectedModules,
           } as any);
+          saveBusinessSelection(businessType, selectedModules);
           break;
         case "license":
           await saveProfileMut.mutateAsync({
@@ -620,26 +632,24 @@ export default function SetupWizard() {
               {isAr ? "اختر نوع نشاطك لتفعيل الوحدات المناسبة" : "Choose your business type to enable relevant modules"}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { value: "construction", label: "Construction", labelAr: "شركة إنشاءات", icon: "🏗️" },
-                { value: "retail", label: "Retail / Trading", labelAr: "تجارة تجزئة", icon: "🏪" },
-                { value: "restaurant", label: "Restaurant / Food", labelAr: "مطعم / طعام", icon: "🍽️" },
-                { value: "manufacturing", label: "Manufacturing", labelAr: "تصنيع", icon: "🏭" },
-                { value: "services", label: "Services", labelAr: "خدمات", icon: "💼" },
-                { value: "all", label: "Multi-Business (All)", labelAr: "متعدد الأنشطة", icon: "🏢" },
-              ].map((bt) => (
+              {BUSINESS_CATALOG.map((bt) => (
                 <button
                   key={bt.value}
-                  onClick={() => setBusinessType(bt.value)}
+                  onClick={() => {
+                    setBusinessType(bt.value);
+                    setSelectedModules(getDefaultModulesForCategory(bt.value));
+                  }}
                   className={`flex items-center gap-3 p-4 border-2 rounded-lg text-left transition-all ${
                     businessType === bt.value
                       ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
                       : "border-slate-200 hover:border-slate-300 bg-white"
                   }`}
                 >
-                  <span className="text-2xl">{bt.icon}</span>
                   <div>
                     <p className="font-medium text-sm">{isAr ? bt.labelAr : bt.label}</p>
+                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                      {isAr ? bt.descriptionAr : bt.description}
+                    </p>
                   </div>
                   {businessType === bt.value && (
                     <Check className="size-5 text-blue-500 ml-auto" />
@@ -647,6 +657,46 @@ export default function SetupWizard() {
                 </button>
               ))}
             </div>
+            {businessType !== "all" && (
+              <div className="rounded-xl border bg-slate-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">{isAr ? "الوحدات التي ستظهر في القائمة" : "Modules shown in sidebar"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isAr ? "اختر فقط ما يحتاجه هذا النشاط" : "Keep only what this tenant needs"}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedModules(getDefaultModulesForCategory(businessType))}
+                  >
+                    {isAr ? "افتراضي" : "Preset"}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {MODULE_CHOICES.map((module) => {
+                    const checked = selectedModules.includes(module.id);
+                    return (
+                      <label key={module.id} className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) => {
+                            setSelectedModules((current) =>
+                              value
+                                ? Array.from(new Set([...current, module.id]))
+                                : current.filter((id) => id !== module.id),
+                            );
+                          }}
+                        />
+                        <span>{isAr ? module.labelAr : module.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         );
       case "license":

@@ -63,6 +63,7 @@ jobs:
           }
 
           $installDirs = @(
+            (Join-Path $env:LOCALAPPDATA "programs\YASCO ERP"),
             (Join-Path $env:LOCALAPPDATA "Programs\YASCO ERP"),
             (Join-Path $env:LOCALAPPDATA "YASCO ERP"),
             (Join-Path $env:ProgramFiles "YASCO ERP"),
@@ -84,6 +85,8 @@ jobs:
           }
 
           $candidatePaths = @(
+            (Join-Path $env:LOCALAPPDATA "programs\YASCO ERP\YASCO ERP.exe"),
+            (Join-Path $env:LOCALAPPDATA "programs\YASCO ERP\app.exe"),
             (Join-Path $env:LOCALAPPDATA "Programs\YASCO ERP\YASCO ERP.exe"),
             (Join-Path $env:LOCALAPPDATA "Programs\YASCO ERP\app.exe"),
             (Join-Path $env:LOCALAPPDATA "YASCO ERP\YASCO ERP.exe"),
@@ -100,7 +103,14 @@ jobs:
 
           if (-not $exe) {
             $candidatePaths | ForEach-Object { Write-Host "Checked: $_" }
-            throw "Installed YASCO ERP executable was not found."
+            $exe = Get-ChildItem -Path $env:LOCALAPPDATA -Recurse -Filter "YASCO ERP.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+            if (-not $exe) {
+              $exe = Get-ChildItem -Path $env:LOCALAPPDATA -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+            }
+            if (-not $exe) {
+              throw "Installed YASCO ERP executable was not found."
+            }
+            Write-Host "Found via fallback search: $exe"
           }
           Write-Host "Using installed executable: $exe"
 

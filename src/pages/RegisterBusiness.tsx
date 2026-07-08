@@ -17,6 +17,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  BUSINESS_CATALOG,
+  getDefaultModulesForCategory,
+  saveBusinessSelection,
+} from "@/config/businessCatalog";
+import type { BusinessCategory } from "@/config/businessCatalog";
 
 const formSchema = z.object({
   companyName: z.string().min(2, "Company name is required"),
@@ -54,18 +60,7 @@ const businessTypes = [
   { value: "branch", label: "Branch", labelAr: "فرع شركة" },
 ];
 
-const industries = [
-  { value: "retail", label: "Retail", labelAr: "تجارة التجزئة" },
-  { value: "wholesale", label: "Wholesale", labelAr: "تجارة الجملة" },
-  { value: "manufacturing", label: "Manufacturing", labelAr: "التصنيع" },
-  { value: "services", label: "Services", labelAr: "الخدمات" },
-  { value: "technology", label: "Technology", labelAr: "التقنية" },
-  { value: "healthcare", label: "Healthcare", labelAr: "الرعاية الصحية" },
-  { value: "construction", label: "Construction", labelAr: "المقاولات" },
-  { value: "hospitality", label: "Hospitality", labelAr: "الضيافة" },
-  { value: "education", label: "Education", labelAr: "التعليم" },
-  { value: "logistics", label: "Logistics", labelAr: "الخدمات اللوجستية" },
-];
+const industries = BUSINESS_CATALOG.filter((item) => item.value !== "all");
 
 const employeeRanges = [
   { value: "1-5", label: "1-5" },
@@ -274,6 +269,8 @@ export default function RegisterBusiness() {
           payload.taxNumber = values.taxNumber;
       }
     }
+    const category = values.industry as BusinessCategory;
+    saveBusinessSelection(category, getDefaultModulesForCategory(category));
     registerMutation.mutate(payload as any);
   };
 

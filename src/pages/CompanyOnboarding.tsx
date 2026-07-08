@@ -4,7 +4,7 @@ import {
   Building2, MapPin, Shield, FileText, Palette, Check,
   ChevronLeft, ChevronRight, Upload, Loader2, Globe, CreditCard,
   Stethoscope, Wrench, Factory, Store, UtensilsCrossed, Hotel,
-  GraduationCap, Truck, Home, Briefcase, Zap,
+  GraduationCap, Truck, Home, Briefcase, Zap, Sparkles,
 } from "lucide-react";
 import { useLanguage } from "@/providers/language";
 import { useCountryDetection } from "@/providers/country-detection";
@@ -16,7 +16,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import {
+  BUSINESS_CATALOG,
+  MODULE_CHOICES,
+  getDefaultModulesForCategory,
+  saveBusinessSelection,
+} from "@/config/businessCatalog";
+import type { BusinessCategory } from "@/config/businessCatalog";
 
 const COMPANY_ONBOARDING_KEY = "yasco-company-profile";
 
@@ -29,20 +37,21 @@ const steps = [
   { key: "done", icon: Check, titleEn: "Complete", titleAr: "اكتمل" },
 ];
 
-const businessCategories = [
-  { value: "hospital", label: "Hospital / Clinic", labelAr: "مستشفى / عيادة", icon: Stethoscope, color: "text-teal-600 bg-teal-50" },
-  { value: "workshop", label: "Automotive Workshop", labelAr: "ورشة سيارات", icon: Wrench, color: "text-amber-600 bg-amber-50" },
-  { value: "construction", label: "Construction", labelAr: "إنشاءات", icon: Factory, color: "text-orange-600 bg-orange-50" },
-  { value: "retail", label: "Retail / Trading", labelAr: "تجارة", icon: Store, color: "text-blue-600 bg-blue-50" },
-  { value: "restaurant", label: "Restaurant / Food", labelAr: "مطعم", icon: UtensilsCrossed, color: "text-red-600 bg-red-50" },
-  { value: "hotel", label: "Hotel / Hospitality", labelAr: "فندق", icon: Hotel, color: "text-purple-600 bg-purple-50" },
-  { value: "manufacturing", label: "Manufacturing", labelAr: "تصنيع", icon: Factory, color: "text-indigo-600 bg-indigo-50" },
-  { value: "education", label: "Education", labelAr: "تعليم", icon: GraduationCap, color: "text-cyan-600 bg-cyan-50" },
-  { value: "transport", label: "Transport / Logistics", labelAr: "نقل", icon: Truck, color: "text-emerald-600 bg-emerald-50" },
-  { value: "real_estate", label: "Real Estate", labelAr: "عقارات", icon: Home, color: "text-pink-600 bg-pink-50" },
-  { value: "services", label: "General Services", labelAr: "خدمات", icon: Zap, color: "text-slate-600 bg-slate-50" },
-  { value: "all", label: "Multi-Business (All)", labelAr: "متعدد الأنشطة", icon: Globe, color: "text-violet-600 bg-violet-50" },
-];
+const iconMap = {
+  Stethoscope,
+  Wrench,
+  Factory,
+  Store,
+  UtensilsCrossed,
+  Hotel,
+  GraduationCap,
+  Truck,
+  Home,
+  Briefcase,
+  Zap,
+  Globe,
+  Sparkles,
+};
 
 export default function CompanyOnboarding() {
   const navigate = useNavigate();
@@ -65,7 +74,8 @@ export default function CompanyOnboarding() {
   const [country, setCountryState] = useState(selectedCountry);
   const [crNumber, setCrNumber] = useState("");
   const [vatNumber, setVatNumber] = useState("");
-  const [businessCategory, setBusinessCategory] = useState("");
+  const [businessCategory, setBusinessCategory] = useState<BusinessCategory | "">("");
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [invoiceColor, setInvoiceColor] = useState("#1E3A5F");
 
@@ -93,9 +103,12 @@ export default function CompanyOnboarding() {
       companyName, companyNameAr, email, phone, website,
       buildingNo, street, district, city, zipCode, country,
       crNumber, vatNumber, businessCategory,
+      selectedModules,
+      enabledModules: selectedModules,
       invoiceColor, completedAt: new Date().toISOString(),
     };
     localStorage.setItem(COMPANY_ONBOARDING_KEY, JSON.stringify(profile));
+    if (businessCategory) saveBusinessSelection(businessCategory, selectedModules);
     await new Promise(r => setTimeout(r, 600));
     setLoading(false);
     toast.success(isAr ? "تم حفظ معلومات الشركة" : "Company information saved");
@@ -222,12 +235,15 @@ export default function CompanyOnboarding() {
               {isAr ? "اختر فئة نشاطك لتفعيل الوحدات المناسبة" : "Choose your business category to enable relevant modules"}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {businessCategories.map(cat => {
-                const Icon = cat.icon;
+              {BUSINESS_CATALOG.map(cat => {
+                const Icon = iconMap[cat.icon as keyof typeof iconMap] || Briefcase;
                 return (
                   <button
                     key={cat.value}
-                    onClick={() => setBusinessCategory(cat.value)}
+                    onClick={() => {
+                      setBusinessCategory(cat.value);
+                      setSelectedModules(getDefaultModulesForCategory(cat.value));
+                    }}
                     className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl text-center transition-all ${
                       businessCategory === cat.value
                         ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
@@ -242,6 +258,46 @@ export default function CompanyOnboarding() {
                 );
               })}
             </div>
+            {businessCategory && businessCategory !== "all" && (
+              <div className="rounded-xl border bg-slate-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">{isAr ? "الوحدات المفعلة" : "Enabled modules"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isAr ? "يمكنك تعديلها حسب احتياج النشاط" : "Adjust these for the tenant's exact workflow"}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedModules(getDefaultModulesForCategory(businessCategory))}
+                  >
+                    {isAr ? "استعادة الافتراضي" : "Preset"}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {MODULE_CHOICES.map((module) => {
+                    const checked = selectedModules.includes(module.id);
+                    return (
+                      <label key={module.id} className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) => {
+                            setSelectedModules((current) =>
+                              value
+                                ? Array.from(new Set([...current, module.id]))
+                                : current.filter((id) => id !== module.id),
+                            );
+                          }}
+                        />
+                        <span>{isAr ? module.labelAr : module.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         );
       case "branding":

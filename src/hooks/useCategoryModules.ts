@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import {
-  BusinessCategory,
   getStoredCategory,
   getEnabledModuleIds,
   MODULE_PATH_PREFIXES,
 } from "@/config/businessCatalog";
+import type { BusinessCategory } from "@/config/businessCatalog";
 
 export interface ModuleConfig {
   key: string;
@@ -174,7 +174,7 @@ export function useCategoryModules(category?: BusinessCategory) {
     return modules.filter((module) => {
       if (enabledModuleIds.has(module.key)) return true;
       const paths = MODULE_PATH_PREFIXES[module.key] || [];
-      return paths.some((prefix) => module.path === prefix || module.path.startsWith(`${prefix}/`));
+      return paths.some((prefix) => module.path === prefix || (prefix !== "/app" && module.path.startsWith(`${prefix}/`)));
     });
   }, [category]);
 }

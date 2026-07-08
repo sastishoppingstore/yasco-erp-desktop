@@ -314,8 +314,27 @@ export const MODULE_CHOICES = [
   { id: "settings", label: "Settings", labelAr: "الإعدادات" },
 ];
 
+const CATEGORY_ALIASES: Record<string, BusinessCategory> = {
+  healthcare: "hospital",
+  clinic: "hospital",
+  hospitality: "hotel",
+  accommodation: "hotel",
+  logistics: "transport",
+  wholesale: "retail",
+  technology: "services",
+  auto_workshop: "workshop",
+  realestate: "real_estate",
+};
+
+export function normalizeBusinessCategory(category?: string | null): BusinessCategory {
+  if (!category) return "all";
+  if (CATEGORY_ALIASES[category]) return CATEGORY_ALIASES[category];
+  return BUSINESS_CATALOG.some((item) => item.value === category) ? (category as BusinessCategory) : "all";
+}
+
 export function getBusinessCatalogItem(category?: string | null) {
-  return BUSINESS_CATALOG.find((item) => item.value === category) ?? BUSINESS_CATALOG.find((item) => item.value === "all")!;
+  const normalized = normalizeBusinessCategory(category);
+  return BUSINESS_CATALOG.find((item) => item.value === normalized) ?? BUSINESS_CATALOG.find((item) => item.value === "all")!;
 }
 
 export function getStoredBusinessProfile(): BusinessProfile {
@@ -345,7 +364,7 @@ export function saveBusinessSelection(category: BusinessCategory, selectedModule
 
 export function getStoredCategory(): BusinessCategory {
   const profile = getStoredBusinessProfile();
-  return (profile.businessCategory || profile.businessType || profile.industry || "all") as BusinessCategory;
+  return normalizeBusinessCategory((profile.businessCategory || profile.businessType || profile.industry || "all") as string);
 }
 
 export function getDefaultModulesForCategory(category: BusinessCategory): string[] {

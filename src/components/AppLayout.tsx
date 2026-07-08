@@ -61,7 +61,11 @@ import {
 import { AiAssistantPanel } from "./AiAssistantPanel";
 import { SyncStatusBar } from "./sync/SyncStatusBar";
 import { VoiceCommandButton, VoiceCommandHeaderButton } from "./VoiceCommand";
-import { useCategoryModules, getStoredCategory, BusinessCategory } from "@/hooks/useCategoryModules";
+import {
+  getEnabledSidebarPathPrefixes,
+  getStoredCategory,
+  getVisibleGroupTitles,
+} from "@/config/businessCatalog";
 
 const categoryGroupVisibility: Record<string, string[]> = {
   hospital: ['MAIN', 'FINANCE', 'INVENTORY', 'SALES', 'PURCHASE', 'CRM', 'HRM', 'OPERATIONS', 'PLATFORM', 'SYSTEM'],
@@ -253,8 +257,16 @@ const SidebarContent = memo(function SidebarContent({ collapsed, onNavigate }: {
 
   const userAdminItems = adminMenuItems.filter(item => item.roles.includes(user?.role || ""));
 
+  const isSuperAdmin = user?.role === "super_admin";
   const storedCategory = getStoredCategory();
-  const visibleGroups = categoryGroupVisibility[storedCategory] || categoryGroupVisibility.all;
+  const visibleGroups = isSuperAdmin
+    ? categoryGroupVisibility.all
+    : (getVisibleGroupTitles(storedCategory) || categoryGroupVisibility[storedCategory] || categoryGroupVisibility.all);
+  const enabledPathPrefixes = isSuperAdmin ? null : getEnabledSidebarPathPrefixes(storedCategory);
+  const isItemEnabled = (path: string) => {
+    if (!enabledPathPrefixes) return true;
+    return enabledPathPrefixes.some((prefix) => path === prefix || (prefix !== "/app" && path.startsWith(`${prefix}/`)));
+  };
 
   const displayName = companySettings?.companyName || "YASCO ERP";
   const displayAr = companySettings?.companyNameAr;
@@ -262,7 +274,10 @@ const SidebarContent = memo(function SidebarContent({ collapsed, onNavigate }: {
   const initials = displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
   // Filter menu items by search query
-  const filteredGroups = menuGroups.filter(g => visibleGroups.includes(g.title));
+  const filteredGroups = menuGroups
+    .filter(g => visibleGroups.includes(g.title))
+    .map((group) => ({ ...group, items: group.items.filter((item) => isItemEnabled(item.path)) }))
+    .filter((group) => group.items.length > 0);
   const allItems = filteredGroups.flatMap(g => g.items.map(item => ({ ...item, group: rtl ? g.titleAr : g.title })));
   const filteredItems = searchQuery.trim()
     ? allItems.filter(item =>
