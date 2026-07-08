@@ -25,6 +25,7 @@ import {
   BUSINESS_CATALOG,
   MODULE_CHOICES,
   getDefaultModulesForCategory,
+  getBusinessCatalogItem,
   saveBusinessSelection,
 } from "@/config/businessCatalog";
 import type { BusinessCategory } from "@/config/businessCatalog";
@@ -98,8 +99,9 @@ export default function SetupWizard() {
   const [receiptNextNumber, setReceiptNextNumber] = useState("3001");
 
   // Step 7: Business Type
-  const [businessType, setBusinessType] = useState<BusinessCategory>("construction");
-  const [selectedModules, setSelectedModules] = useState<string[]>(getDefaultModulesForCategory("construction"));
+  const [businessType, setBusinessType] = useState<BusinessCategory>("construction_engineering");
+  const [businessSubCategory, setBusinessSubCategory] = useState("Civil Contracting and Infrastructure Development");
+  const [selectedModules, setSelectedModules] = useState<string[]>(getDefaultModulesForCategory("construction_engineering"));
 
   // Step 8: License
   const [licenseKey, setLicenseKey] = useState("");
@@ -221,10 +223,11 @@ export default function SetupWizard() {
         case "business":
           await saveProfileMut.mutateAsync({
             businessType,
+            businessSubCategory,
             selectedModules,
             enabledModules: selectedModules,
           } as any);
-          saveBusinessSelection(businessType, selectedModules);
+          saveBusinessSelection(businessType, selectedModules, businessSubCategory);
           break;
         case "license":
           await saveProfileMut.mutateAsync({
@@ -637,6 +640,7 @@ export default function SetupWizard() {
                   key={bt.value}
                   onClick={() => {
                     setBusinessType(bt.value);
+                    setBusinessSubCategory(bt.subCategories?.[0] || "");
                     setSelectedModules(getDefaultModulesForCategory(bt.value));
                   }}
                   className={`flex items-center gap-3 p-4 border-2 rounded-lg text-left transition-all ${
@@ -659,6 +663,23 @@ export default function SetupWizard() {
             </div>
             {businessType !== "all" && (
               <div className="rounded-xl border bg-slate-50 p-4">
+                {(getBusinessCatalogItem(businessType).subCategories?.length || 0) > 0 && (
+                  <div className="mb-4 space-y-2">
+                    <Label>{isAr ? "النشاط الفرعي" : "Sub-category"}</Label>
+                    <Select value={businessSubCategory} onValueChange={setBusinessSubCategory}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder={isAr ? "اختر النشاط الفرعي" : "Select sub-category"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getBusinessCatalogItem(businessType).subCategories?.map((subCategory) => (
+                          <SelectItem key={subCategory} value={subCategory}>
+                            {subCategory}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">{isAr ? "الوحدات التي ستظهر في القائمة" : "Modules shown in sidebar"}</p>

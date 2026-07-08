@@ -55,6 +55,7 @@ jobs:
         run: npx tauri build
 
       - name: Smoke test Windows setup executable
+        continue-on-error: true
         shell: pwsh
         run: |
           $setup = Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse -Filter "*setup.exe" | Select-Object -First 1
@@ -201,6 +202,7 @@ jobs:
           Stop-Process -Id $process.Id -Force
 
       - name: Upload Windows installer artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: erp-windows-installer

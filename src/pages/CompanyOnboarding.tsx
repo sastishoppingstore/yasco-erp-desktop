@@ -22,6 +22,7 @@ import {
   BUSINESS_CATALOG,
   MODULE_CHOICES,
   getDefaultModulesForCategory,
+  getBusinessCatalogItem,
   saveBusinessSelection,
 } from "@/config/businessCatalog";
 import type { BusinessCategory } from "@/config/businessCatalog";
@@ -75,6 +76,7 @@ export default function CompanyOnboarding() {
   const [crNumber, setCrNumber] = useState("");
   const [vatNumber, setVatNumber] = useState("");
   const [businessCategory, setBusinessCategory] = useState<BusinessCategory | "">("");
+  const [businessSubCategory, setBusinessSubCategory] = useState("");
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [invoiceColor, setInvoiceColor] = useState("#1E3A5F");
@@ -102,13 +104,13 @@ export default function CompanyOnboarding() {
     const profile = {
       companyName, companyNameAr, email, phone, website,
       buildingNo, street, district, city, zipCode, country,
-      crNumber, vatNumber, businessCategory,
+      crNumber, vatNumber, businessCategory, businessSubCategory,
       selectedModules,
       enabledModules: selectedModules,
       invoiceColor, completedAt: new Date().toISOString(),
     };
     localStorage.setItem(COMPANY_ONBOARDING_KEY, JSON.stringify(profile));
-    if (businessCategory) saveBusinessSelection(businessCategory, selectedModules);
+    if (businessCategory) saveBusinessSelection(businessCategory, selectedModules, businessSubCategory);
     await new Promise(r => setTimeout(r, 600));
     setLoading(false);
     toast.success(isAr ? "تم حفظ معلومات الشركة" : "Company information saved");
@@ -242,6 +244,7 @@ export default function CompanyOnboarding() {
                     key={cat.value}
                     onClick={() => {
                       setBusinessCategory(cat.value);
+                      setBusinessSubCategory(cat.subCategories?.[0] || "");
                       setSelectedModules(getDefaultModulesForCategory(cat.value));
                     }}
                     className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl text-center transition-all ${
@@ -260,6 +263,23 @@ export default function CompanyOnboarding() {
             </div>
             {businessCategory && businessCategory !== "all" && (
               <div className="rounded-xl border bg-slate-50 p-4">
+                {(getBusinessCatalogItem(businessCategory).subCategories?.length || 0) > 0 && (
+                  <div className="mb-4 space-y-2">
+                    <Label>{isAr ? "النشاط الفرعي" : "Sub-category"}</Label>
+                    <Select value={businessSubCategory} onValueChange={setBusinessSubCategory}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder={isAr ? "اختر النشاط الفرعي" : "Select sub-category"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getBusinessCatalogItem(businessCategory).subCategories?.map((subCategory) => (
+                          <SelectItem key={subCategory} value={subCategory}>
+                            {subCategory}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">{isAr ? "الوحدات المفعلة" : "Enabled modules"}</p>
@@ -359,6 +379,7 @@ export default function CompanyOnboarding() {
                 <div className="min-w-0">
                   <p className="text-[10px] text-slate-500">{isAr ? "الفئة" : "Category"}</p>
                   <p className="text-sm font-medium capitalize">{businessCategory}</p>
+                  {businessSubCategory && <p className="text-xs text-slate-500 truncate">{businessSubCategory}</p>}
                 </div>
               </div>
               <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border">
